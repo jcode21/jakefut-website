@@ -1,0 +1,6 @@
+.cursor-pointer {
+    cursor: pointer !important;
+}
+.detail-row a:not(:last-child) {
+    border-bottom: 1px solid #dee2e6; /* Color de borde Bootstrap */
+}
