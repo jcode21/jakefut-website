@@ -9,8 +9,9 @@ function fetchData() {
     
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
-            eventData = JSON.parse(xhr.responseText); 
+            let eventDataTmp = JSON.parse(xhr.responseText); 
             if (Array.isArray(eventData)) {
+                eventData = filterAndSort(eventDataTmp);
                 console.log(eventData);
                 renderTable(eventData);
             }
@@ -53,6 +54,16 @@ function renderTable(data) {
             detailRow.classList.toggle("d-none");
         });
     });
+}
+
+function filterAndSort(list) {
+    return list
+        .filter(item => !item.id.includes("channel"))
+        .sort((a, b) => {
+            if (a.hour === "always") return 1; 
+            if (b.hour === "always") return -1;
+            return a.hour.localeCompare(b.hour); 
+        });
 }
 
 function filterEvents() {
