@@ -2,7 +2,8 @@ let eventData = [];
 
 function fetchData() {
     const xhr = new XMLHttpRequest();
-    const url = "http://localhost:8080/matches"; 
+    //const url = "http://localhost:8080/matches"; 
+    const url = "https://api-jakefutbol.redpos.app/matches"
 
     xhr.open("GET", url, true);
     
