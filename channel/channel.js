@@ -23,7 +23,7 @@ function loadFrame(data) {
     const option = params.get("option");
 
     if (!matchId) {
-        console.warn("No se encontró el parámetro 'id' en la URL");
+        console.warn("No se encontró el parámetro 'eventId' en la URL");
         return;
     }
 
@@ -46,19 +46,28 @@ function loadFrame(data) {
         return;
     }
 
-    const iframeUrl = match.links?.[option]; 
+    if (!match.links || !match.links[optionIndex]) {
+        console.warn(`No hay enlaces disponibles para la opción ${optionIndex} del evento con ID: ${matchId}`);
+        return;
+    }
 
-    if (!iframeUrl) {
-        console.warn(`No hay enlaces disponibles para el evento con ID: ${matchId}`);
+    const iframeUrl = match.links[optionIndex].url;
+
+    try {
+        new URL(iframeUrl); 
+    } catch (error) {
+        console.warn(`El enlace no es una URL válida: ${iframeUrl}`);
         return;
     }
 
     const iframe = document.getElementById("frameView");
     if (iframe) {
         iframe.src = iframeUrl;
+        console.log(`Iframe actualizado con: ${iframeUrl}`);
     } else {
-        console.error("No se encontró el iframe con ID 'matchFrame'");
+        console.error("No se encontró el iframe con ID 'frameView'");
     }
 }
+
 
 document.addEventListener("DOMContentLoaded", fetchData);
