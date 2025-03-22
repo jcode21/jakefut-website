@@ -43,7 +43,7 @@ function renderTable(data) {
         detailRow.innerHTML = `
             <td colspan="2" class="bg-light">
                 ${event.links.map((link, i) => {
-                    const page = link.type === 'web' ? `channel/channel.html` : `play/play.html`;
+                    const page = link.type === 'web' ? `channel/channel.html` : `channel/channel.html`;
                     return `
                         <a class='text-decoration-none d-block py-2 border-bottom' 
                         href="${page}?eventId=${event.id}&option=${i}" target="_blank">
