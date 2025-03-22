@@ -9,7 +9,7 @@ function fetchData() {
         if (xhr.readyState === 4 && xhr.status === 200) {
             eventData = JSON.parse(xhr.responseText); 
             if (Array.isArray(eventData)) {
-                loadFrame(eventData);
+                loadDataFrame(eventData);
             }
         }
     };
@@ -17,7 +17,7 @@ function fetchData() {
     xhr.send();
 }
 
-async function loadFrame(data) {
+async function loadDataFrame(data) {
     const params = new URLSearchParams(window.location.search);
     const matchId = params.get("eventId");
     const option = params.get("option");
@@ -79,18 +79,5 @@ async function getRealStreamUrl(originalUrl) {
         return null;
     }
 }
-
-async function loadFrame() {
-    const originalUrl = "https://streamtp3.com/global1.php?stream=movistar";
-    const finalUrl = await getRealStreamUrl(originalUrl);
-
-    if (finalUrl) {
-        document.getElementById("frameView").src = finalUrl;
-        console.log("Iframe actualizado con:", finalUrl);
-    } else {
-        console.warn("No se pudo obtener la URL final.");
-    }
-}
-
 
 document.addEventListener("DOMContentLoaded", fetchData);
