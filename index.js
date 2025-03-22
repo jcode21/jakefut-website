@@ -40,7 +40,7 @@ function renderTable(data) {
         detailRow.innerHTML = `
             <td colspan="2" class="bg-light">
                 ${event.links.map((link, i) => 
-                    `<a class='text-decoration-none d-block py-2 border-bottom' href="channel/channel.html?eventId=${event.id}&option=${i}" target="_blank">
+                    `<a class='text-decoration-none d-block py-2 border-bottom' href="play/play.html?eventId=${event.id}&option=${i}" target="_blank">
                         Play ${i + 1}
                     </a>`
                 ).join("")}
