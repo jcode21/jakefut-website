@@ -89,23 +89,11 @@ function loadStream(url, match) {
 
     const video = document.getElementById('videoPlayer');
 
-    if (Hls.isSupported()) {
-        const hls = new Hls({
-            xhrSetup: function (xhr, url) {
-                console.log("Configurando headers para", url);
-                xhr.setRequestHeader("Referer", "https://streamtp3.com");
-                xhr.setRequestHeader("Origin", "https://streamtp3.com");
-                xhr.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36");
-                xhr.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                xhr.setRequestHeader("Accept-Language", "es-ES,es;q=0.9,en;q=0.8");
-                xhr.setRequestHeader("Connection", "keep-alive");
-                xhr.setRequestHeader("Sec-Fetch-Dest", "document");
-                xhr.setRequestHeader("Sec-Fetch-Mode", "navigate");
-                xhr.setRequestHeader("Sec-Fetch-Site", "same-origin");
-            }
-        });
+    const proxyUrl = `https://proxy.noura.app/stream?url=${encodeURIComponent(streamUrl)}`;
 
-        hls.loadSource(url);
+    if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(proxyUrl);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
             console.log("Video listo para reproducir");
@@ -113,7 +101,7 @@ function loadStream(url, match) {
         });
 
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = url;
+        video.src = proxyUrl;
         video.play();
     }
 }
