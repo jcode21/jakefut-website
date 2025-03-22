@@ -80,6 +80,7 @@ function fetchToken(match, link) {
 
     xhr.send();
 }
+
 function loadStream(url, match) {
     if (!url) {
         console.warn(`No hay enlaces disponibles para el evento con ID: ${match.id}`);
@@ -98,8 +99,6 @@ function loadStream(url, match) {
                 xhr.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
                 xhr.setRequestHeader("Accept-Language", "es-ES,es;q=0.9,en;q=0.8");
                 xhr.setRequestHeader("Connection", "keep-alive");
-                xhr.setRequestHeader("Cache-Control", "no-cache");
-                xhr.setRequestHeader("Pragma", "no-cache");
                 xhr.setRequestHeader("Sec-Fetch-Dest", "document");
                 xhr.setRequestHeader("Sec-Fetch-Mode", "navigate");
                 xhr.setRequestHeader("Sec-Fetch-Site", "same-origin");
@@ -118,6 +117,7 @@ function loadStream(url, match) {
         video.play();
     }
 }
+
 
 function playVideo() {
     const video = document.getElementById('videoPlayer');
