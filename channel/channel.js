@@ -1,5 +1,6 @@
-function fetchData() {
+function fetchMatchData() {
     const xhr = new XMLHttpRequest();
+    
     //const url = "http://localhost:8080/matches";
     const url = "https://api-jakefutbol.redpos.app/matches";
 
@@ -50,35 +51,22 @@ async function loadDataFrame(data) {
         console.warn(`No hay enlaces disponibles para la opción ${optionIndex} del evento con ID: ${matchId}`);
         return;
     }
-/*
+
     const originalUrl = match.links[optionIndex].url;
 
-    const finalUrl = originalUrl;
-
     try {
-        new URL(iframeUrl); 
+        new URL(originalUrl); 
     } catch (error) {
-        console.warn(`El enlace no es una URL válida: ${iframeUrl}`);
+        console.warn(`El enlace no es una URL válida: ${originalUrl}`);
         return;
     }
-*/
-    const finalUrl = "https://streamtp3.com/global2.php?stream=liga1max";
-    if (finalUrl) {
-        document.getElementById("frameView").src = finalUrl;
-        console.log("Iframe actualizado con:", finalUrl);
+
+    if (originalUrl) {
+        document.getElementById("frameView").src = originalUrl;
+        console.log("Iframe actualizado con:", originalUrl);
     } else {
         console.warn("No se pudo obtener la URL final.");
     }
 }
 
-async function getRealStreamUrl(originalUrl) {
-    try {
-        const response = await fetch(originalUrl, { method: "HEAD", redirect: "follow" });
-        return response.url; // Retorna la URL final después de las redirecciones
-    } catch (error) {
-        console.error("Error obteniendo la URL real:", error);
-        return null;
-    }
-}
-
-document.addEventListener("DOMContentLoaded", fetchData);
+document.addEventListener("DOMContentLoaded", fetchMatchData);

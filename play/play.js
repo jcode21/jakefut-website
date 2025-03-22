@@ -58,74 +58,28 @@ function searchMatch(matchData, matchId, optionIndex) {
         return;
     }
 
-    fetchConfigURL(match, match.links[optionIndex]);
+    fetchToken(match, match.links[optionIndex]);
 
 }
 
-function fetchConfigURL(match, link) {
-
+function fetchToken(match, link) {
     const xhr = new XMLHttpRequest();
-    const url = host + `/config-urls/${link.id}`;
+
+    const url = `${host}/tokens?id=${link.id}`;
 
     xhr.open("GET", url, true);
 
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
-            const configData = JSON.parse(xhr.responseText);
-            if (configData && configData !== null) {
-                //fetchToken(configData, match);
-                const finalUrl = "https://cgxheq.fubohd.com:443/movistar/mono.m3u8?token=013eabaa79ae0c7a04ce2b92398452c4d14bd654-63-1742696926-1742660926"
-                loadStream(finalUrl, match);
+            const tokenData = JSON.parse(xhr.responseText);
+            if (tokenData) {
+                loadStream(tokenData.url, match);
             }
         }
     };
 
     xhr.send();
 }
-
-function fetchToken(configData, match) {
-    const xhr = new XMLHttpRequest();
-
-    const queryParams = new URLSearchParams(
-        configData.queryParams.map(param => [param.name, param.value])
-    ).toString();
-
-    const url = `https://${configData.host}/${configData.path}?${queryParams}`;
-
-    xhr.open("GET", url, true);
-
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            const responseText = xhr.responseText;
-            if (responseText) {
-                const url = extractURL(responseText);
-                if (url) {
-                    loadStream(url, match);
-                }
-            }
-        }
-    };
-
-    xhr.send();
-}
-
-function extractURL(responseText) {
-    if (typeof responseText !== "string") {
-        console.warn("responseText no es un string. Intentando convertirlo...");
-        responseText = String(responseText);
-    }
-
-    const regex = /var playbackURL = \"(https?:\/\/[^\"]+)\";/;
-    const match = responseText.match(regex);
-
-    if (match && match[1]) {
-        return match[1];
-    }
-
-    console.warn("No se encontró la URL de reproducción en la respuesta");
-    return null;
-}
-
 
 function loadStream(url, match) {
 
