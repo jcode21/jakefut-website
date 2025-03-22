@@ -50,7 +50,7 @@ async function loadDataFrame(data) {
         console.warn(`No hay enlaces disponibles para la opción ${optionIndex} del evento con ID: ${matchId}`);
         return;
     }
-
+/*
     const originalUrl = match.links[optionIndex].url;
 
     const finalUrl = originalUrl;
@@ -61,7 +61,8 @@ async function loadDataFrame(data) {
         console.warn(`El enlace no es una URL válida: ${iframeUrl}`);
         return;
     }
-
+*/
+    const finalUrl = "https://streamtp3.com/global2.php?stream=liga1max";
     if (finalUrl) {
         document.getElementById("frameView").src = finalUrl;
         console.log("Iframe actualizado con:", finalUrl);
