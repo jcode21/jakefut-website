@@ -80,30 +80,43 @@ function fetchToken(match, link) {
 
     xhr.send();
 }
-
 function loadStream(url, match) {
-
-    if (url === undefined) {
+    if (!url) {
         console.warn(`No hay enlaces disponibles para el evento con ID: ${match.id}`);
         return;
     }
 
-    const videoSrc = url;
-
     const video = document.getElementById('videoPlayer');
 
     if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(videoSrc);
+        const hls = new Hls({
+            xhrSetup: function (xhr, url) {
+                console.log("Configurando headers para", url);
+                xhr.setRequestHeader("Referer", "https://streamtp3.com");
+                xhr.setRequestHeader("Origin", "https://streamtp3.com");
+                xhr.setRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36");
+                xhr.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+                xhr.setRequestHeader("Accept-Language", "es-ES,es;q=0.9,en;q=0.8");
+                xhr.setRequestHeader("Connection", "keep-alive");
+                xhr.setRequestHeader("Cache-Control", "no-cache");
+                xhr.setRequestHeader("Pragma", "no-cache");
+                xhr.setRequestHeader("Sec-Fetch-Dest", "document");
+                xhr.setRequestHeader("Sec-Fetch-Mode", "navigate");
+                xhr.setRequestHeader("Sec-Fetch-Site", "same-origin");
+            }
+        });
+
+        hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
             console.log("Video listo para reproducir");
+            video.play();
         });
+
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = videoSrc;
+        video.src = url;
+        video.play();
     }
-    playVideo(video);
-    pauseVideo(video);
 }
 
 function playVideo() {
