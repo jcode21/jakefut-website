@@ -58,27 +58,8 @@ function searchMatch(matchData, matchId, optionIndex) {
         return;
     }
 
-    fetchToken(match, match.links[optionIndex]);
+    loadStream(match.links[optionIndex], match);
 
-}
-
-function fetchToken(match, link) {
-    const xhr = new XMLHttpRequest();
-
-    const url = `${host}/tokens?id=${link.id}`;
-
-    xhr.open("GET", url, true);
-
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            const tokenData = JSON.parse(xhr.responseText);
-            if (tokenData) {
-                loadStream(tokenData.url, match);
-            }
-        }
-    };
-
-    xhr.send();
 }
 
 function loadStream(url, match) {
@@ -87,9 +68,9 @@ function loadStream(url, match) {
         return;
     }
 
-    const video = document.getElementById('videoPlayer');
+    const video = document.getElementById('my_video_1');
 
-    const proxyUrl = `https://proxy.noura.app/stream?url=${encodeURIComponent(streamUrl)}`;
+    const proxyUrl = `https://39osta28l0q8tvo4.tamalpsdrtd.lat/v4/variant/VE1gTdz0mLzRnLv52bt9SMhFjdtM3ajFmc09yNzUjY2UWY0QGO0MWLihTMh1iNlRGNtgzYjVWLyIWNkFTY5kzL.m3u8`;
 
     if (Hls.isSupported()) {
         const hls = new Hls();
