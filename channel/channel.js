@@ -53,7 +53,7 @@ async function loadDataFrame(data) {
 
     const originalUrl = match.links[optionIndex].url;
 
-    const finalUrl = await getRealStreamUrl(originalUrl);
+    const finalUrl = originalUrl;
 
     try {
         new URL(iframeUrl); 
