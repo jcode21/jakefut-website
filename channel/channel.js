@@ -17,7 +17,7 @@ function fetchData() {
     xhr.send();
 }
 
-function loadFrame(data) {
+async function loadFrame(data) {
     const params = new URLSearchParams(window.location.search);
     const matchId = params.get("eventId");
     const option = params.get("option");
@@ -51,7 +51,9 @@ function loadFrame(data) {
         return;
     }
 
-    const iframeUrl = match.links[optionIndex].url;
+    const originalUrl = match.links[optionIndex].url;
+
+    const finalUrl = await getRealStreamUrl(originalUrl);
 
     try {
         new URL(iframeUrl); 
@@ -60,12 +62,33 @@ function loadFrame(data) {
         return;
     }
 
-    const iframe = document.getElementById("frameView");
-    if (iframe) {
-        iframe.src = iframeUrl;
-        console.log(`Iframe actualizado con: ${iframeUrl}`);
+    if (finalUrl) {
+        document.getElementById("frameView").src = finalUrl;
+        console.log("Iframe actualizado con:", finalUrl);
     } else {
-        console.error("No se encontró el iframe con ID 'frameView'");
+        console.warn("No se pudo obtener la URL final.");
+    }
+}
+
+async function getRealStreamUrl(originalUrl) {
+    try {
+        const response = await fetch(originalUrl, { method: "HEAD", redirect: "follow" });
+        return response.url; // Retorna la URL final después de las redirecciones
+    } catch (error) {
+        console.error("Error obteniendo la URL real:", error);
+        return null;
+    }
+}
+
+async function loadFrame() {
+    const originalUrl = "https://streamtp3.com/global1.php?stream=movistar";
+    const finalUrl = await getRealStreamUrl(originalUrl);
+
+    if (finalUrl) {
+        document.getElementById("frameView").src = finalUrl;
+        console.log("Iframe actualizado con:", finalUrl);
+    } else {
+        console.warn("No se pudo obtener la URL final.");
     }
 }
 
