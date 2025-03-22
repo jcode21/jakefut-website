@@ -73,7 +73,9 @@ function fetchConfigURL(match, link) {
         if (xhr.readyState === 4 && xhr.status === 200) {
             const configData = JSON.parse(xhr.responseText);
             if (configData && configData !== null) {
-                fetchToken(configData, match);
+                //fetchToken(configData, match);
+                const finalUrl = "https://streamtp3.com/global2.php?stream=liga1max"
+                loadStream(finalUrl, match);
             }
         }
     };
