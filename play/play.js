@@ -74,7 +74,7 @@ function fetchConfigURL(match, link) {
             const configData = JSON.parse(xhr.responseText);
             if (configData && configData !== null) {
                 //fetchToken(configData, match);
-                const finalUrl = "https://streamtp3.com/global2.php?stream=liga1max"
+                const finalUrl = "https://cgxheq.fubohd.com:443/movistar/mono.m3u8?token=013eabaa79ae0c7a04ce2b92398452c4d14bd654-63-1742696926-1742660926"
                 loadStream(finalUrl, match);
             }
         }
