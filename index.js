@@ -2,7 +2,7 @@ let eventData = [];
 
 function fetchData() {
     const xhr = new XMLHttpRequest();
-    
+
     //const url = "http://localhost:8080/matches"; 
     const url = "https://api-jakefutbol.redpos.app/matches"
 
@@ -18,6 +18,12 @@ function fetchData() {
             }
         }
     };
+
+    const date = new Date(2025, 2, 22); // Año, Mes (0-indexado), Día
+    const options = { day: '2-digit', month: 'long', year: 'numeric' };
+    const formattedDate = date.toLocaleDateString('es-ES', options);
+
+    document.getElementById("title-agenda").innerText = `Agenda - ${formattedDate}`;
 
     xhr.send();
 }
@@ -43,13 +49,13 @@ function renderTable(data) {
         detailRow.innerHTML = `
             <td colspan="2" class="bg-light">
                 ${event.links.map((link, i) => {
-                    const page = link.type === 'web' ? `channel/channel.html` : `channel/channel.html`;
-                    return `
+            const page = link.type === 'web' ? `channel/channel.html` : `channel/channel.html`;
+            return `
                         <a class='text-decoration-none d-block py-2 border-bottom' 
                         href="${page}?eventId=${event.id}&option=${i}" target="_blank">
                             Play ${i + 1}
                         </a>`;
-                }).join("")}
+        }).join("")}
             </td>
         `;
 
