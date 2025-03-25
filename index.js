@@ -19,7 +19,7 @@ function fetchData() {
         }
     };
 
-    const date = new Date(2025, 2, 22); // Año, Mes (0-indexado), Día
+    const date = new Date(); // Año, Mes (0-indexado), Día
     const options = { day: '2-digit', month: 'long', year: 'numeric' };
     const formattedDate = date.toLocaleDateString('es-ES', options);
 
