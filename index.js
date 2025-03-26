@@ -89,22 +89,29 @@ function renderTable(data) {
             <td>${match.championshipName}: ${match.homeTeam} vs ${match.visitingTeam}</td>
         `;
 
-        const detailRow = document.createElement("tr");
-        detailRow.classList.add("detail-row", "d-none");
-        detailRow.innerHTML = `
-            <td colspan="2" class="bg-light">
-                ${match.links.map(link => `
-                    <a class='text-decoration-none d-block py-2 border-bottom' 
-                    href="channel/channel.html?matchId=${match.id}&linkId=${link.id}" target="_blank">
-                        ${link.name}
-                    </a>`).join("")}
-            </td>
-        `;
+        const filteredLinks = match.links.filter(link => link.isFormat !== 'Y');
 
-        tableBody.append(row, detailRow);
-        row.addEventListener("click", () => detailRow.classList.toggle("d-none"));
+        if (filteredLinks.length > 0) {
+            const detailRow = document.createElement("tr");
+            detailRow.classList.add("detail-row", "d-none");
+            detailRow.innerHTML = `
+                <td colspan="2" class="bg-light">
+                    ${filteredLinks.map(link => `
+                        <a class='text-decoration-none d-block py-2 border-bottom' 
+                        href="channel/channel.html?matchId=${match.id}&linkId=${link.id}" target="_blank">
+                            ${link.name}
+                        </a>`).join("")}
+                </td>
+            `;
+
+            tableBody.append(row, detailRow);
+            row.addEventListener("click", () => detailRow.classList.toggle("d-none"));
+        } else {
+            tableBody.append(row);
+        }
     });
 }
+
 
 document.getElementById("searchEvent").addEventListener("input", searchEvents);
 document.addEventListener("DOMContentLoaded", fetchData);
