@@ -1,42 +1,71 @@
-function fetchMatchData() {
-    const xhr = new XMLHttpRequest();
-    
-    //const url = "http://localhost:8080/matches";
-    const url = "https://api-jakefutbol.redpos.app/matches";
+let eventsData = [];
 
-    xhr.open("GET", url, true);
-    
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            eventData = JSON.parse(xhr.responseText); 
-            if (Array.isArray(eventData)) {
-                loadDataFrame(eventData);
-            }
+async function fetchData() {
+    try {
+        const response = await fetch(HOST);
+        if (!response.ok) throw new Error(`Error en la API: ${response.status}`);
+
+        const data = await response.json();
+
+        if (!data?.categories) throw new Error("No se encontraron categorías.");
+
+        if (data && data.categories) {
+            eventsData = filterEventsDataFromAPI(data.categories);
+            loadDataFrame(eventsData);
         }
-    };
-    
-    xhr.send();
+
+    } catch (error) {
+        console.error("Error al obtener datos:", error);
+    }
+}
+
+function filterEventsDataFromAPI(data) {
+    if (!Array.isArray(data)) {
+        console.error("Error: 'data' no es una lista válida.", data);
+        return [];
+    }
+
+    console.log("Datos recibidos:", data);
+
+    return data
+        .filter(category => category.code !== 'CHA-FUT') // Filtrar categorías excluidas
+        .flatMap(category => {
+            console.log("Procesando categoría:", category.name);
+            return category.championShips.flatMap(championship => {
+                console.log("  - Procesando campeonato:", championship.name);
+                return championship.matchDays
+                    .filter(matchDay => Number(matchDay.number) === Number(championship.currentMatchDay)) // Convertir a número
+                    .flatMap(matchDay => matchDay.matchs.map(match => ({
+                        id: match.id,
+                        dateTime: match.dateTime,
+                        homeTeam: match.homeTeam,
+                        visitingTeam: match.visitingTeam,
+                        result: match.result,
+                        isSuspended: match.isSuspended,
+                        isFinalized: match.isFinalized,
+                        isTop: match.isTop,
+                        links: match.links,
+                        championshipId: championship.id,
+                        championshipName: championship.name,
+                        championshipSession: championship.session,
+                        championshipCurrentMatchDay: championship.currentMatchDay
+                    })));
+            });
+        });
 }
 
 async function loadDataFrame(data) {
     const params = new URLSearchParams(window.location.search);
-    const matchId = params.get("eventId");
-    const option = params.get("option");
+    const matchId = params.get("matchId");
+    const linkId = params.get("linkId");
 
     if (!matchId) {
-        console.warn("No se encontró el parámetro 'eventId' en la URL");
+        console.warn("No se encontró el parámetro 'matchId' en la URL");
         return;
     }
 
-    if (!option) {
-        console.warn("No se encontró el parámetro 'option' en la URL");
-        return;
-    }
-
-    const optionIndex = parseInt(option, 10);
-
-    if (isNaN(optionIndex) || optionIndex < 0) {
-        console.warn(`El parámetro 'option' debe ser un número válido (recibido: ${option})`);
+    if (!linkId) {
+        console.warn("No se encontró el parámetro 'linkId' en la URL");
         return;
     }
 
@@ -47,26 +76,24 @@ async function loadDataFrame(data) {
         return;
     }
 
-    if (!match.links || !match.links[optionIndex]) {
-        console.warn(`No hay enlaces disponibles para la opción ${optionIndex} del evento con ID: ${matchId}`);
+    let link = Array.isArray(match.links) ? match.links.find(item => item.id === linkId) : undefined;
+
+    if (!match.links || !link) {
+        console.warn(`No hay enlaces disponibles para la opción ${linkId} del evento con ID: ${matchId}`);
         return;
     }
 
-    const originalUrl = match.links[optionIndex].url;
+    updateIframe(link.url)
+}
 
+function updateIframe(url) {
     try {
-        new URL(originalUrl); 
-    } catch (error) {
-        console.warn(`El enlace no es una URL válida: ${originalUrl}`);
-        return;
-    }
-
-    if (originalUrl) {
-        document.getElementById("frameView").src = originalUrl;
+        new URL(url);
+        document.getElementById("frameView").src = url;
         console.log("Iframe actualizado con:", originalUrl);
-    } else {
-        console.warn("No se pudo obtener la URL final.");
+    } catch (error) {
+        console.warn(`❌ URL inválida: ${url}`);
     }
 }
 
-document.addEventListener("DOMContentLoaded", fetchMatchData);
+document.addEventListener("DOMContentLoaded", fetchData);

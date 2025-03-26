@@ -6,7 +6,6 @@ async function fetchData() {
         if (!response.ok) throw new Error(`Error en la API: ${response.status}`);
 
         const data = await response.json();
-        console.log(data);
 
         if (data && data.categories) {
             eventsData = filterEventsDataFromAPI(data.categories);
