@@ -36,6 +36,10 @@ function filterEventsDataFromAPI(data) {
     const filteredEvents = [];
     const channelsEvents = [];
 
+    // Obtener la fecha actual en el formato "dd/MM/yyyy"
+    const today = new Date();
+    const todayStr = today.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+
     data.forEach(category => {
         if (!category.championShips) return;
 
@@ -46,7 +50,7 @@ function filterEventsDataFromAPI(data) {
                     matchDay.matchs.forEach(match => {
                         const event = {
                             id: match.id,
-                            dateTime: match.dateTime,
+                            dateTime: match.dateTime || "", // Puede estar vacío en CHA-FUT
                             homeTeam: match.homeTeam,
                             visitingTeam: match.visitingTeam,
                             result: match.result,
@@ -61,8 +65,15 @@ function filterEventsDataFromAPI(data) {
                         };
 
                         if (category.code === "CHA-FUT") {
+                            // Siempre agregar los eventos de CHA-FUT, incluso sin fecha
                             channelsEvents.push(event);
                         } else {
+                            if (!match.dateTime) return; // Si no tiene fecha, ignorarlo
+                            
+                            const [matchDateStr, matchTimeStr] = match.dateTime.split(" ");
+                            console.log("comparando ", matchDateStr, todayStr)
+                            if (matchDateStr !== todayStr) return; // Filtrar solo eventos de hoy
+
                             filteredEvents.push(event);
                         }
                     });
@@ -70,8 +81,17 @@ function filterEventsDataFromAPI(data) {
         });
     });
 
+    // Ordenar filteredEvents por hora ascendente (HH:mm:ss)
+    filteredEvents.sort((a, b) => {
+        const timeA = a.dateTime.split(" ")[1] || "00:00:00"; // Si falta, asignar medianoche
+        const timeB = b.dateTime.split(" ")[1] || "00:00:00";
+        return timeA.localeCompare(timeB);
+    });
+
     return { filteredEvents, channelsEvents };
 }
+
+
 
 
 function searchEvents() {
