@@ -1,4 +1,5 @@
 let eventsData = [];
+let channelsData = []
 
 async function fetchData() {
     try {
@@ -8,8 +9,11 @@ async function fetchData() {
         const data = await response.json();
 
         if (data && data.categories) {
-            eventsData = filterEventsDataFromAPI(data.categories);
+            const { filteredEvents, channelsEvents } = filterEventsDataFromAPI(data.categories);
+            eventsData = filteredEvents;
+            channelsData = channelsEvents;
             renderTable(eventsData);
+            renderChannels(channelsData);
         }
 
         const date = new Date();
@@ -20,40 +24,55 @@ async function fetchData() {
     }
 }
 
+
 function filterEventsDataFromAPI(data) {
     if (!Array.isArray(data)) {
         console.error("Error: 'data' no es una lista válida.", data);
-        return [];
+        return { filteredEvents: [], channelsEvents: [] };
     }
 
     console.log("Datos recibidos:", data);
 
-    return data
-        .filter(category => category.code !== 'CHA-FUT') // Filtrar categorías excluidas
-        .flatMap(category => {
-            console.log("Procesando categoría:", category.name);
-            return category.championShips.flatMap(championship => {
-                console.log("  - Procesando campeonato:", championship.name);
-                return championship.matchDays
-                    .filter(matchDay => Number(matchDay.number) === Number(championship.currentMatchDay)) // Convertir a número
-                    .flatMap(matchDay => matchDay.matchs.map(match => ({
-                        id: match.id,
-                        dateTime: match.dateTime,
-                        homeTeam: match.homeTeam,
-                        visitingTeam: match.visitingTeam,
-                        result: match.result,
-                        isSuspended: match.isSuspended,
-                        isFinalized: match.isFinalized,
-                        isTop: match.isTop,
-                        links: match.links,
-                        championshipId: championship.id,
-                        championshipName: championship.name,
-                        championshipSession: championship.session,
-                        championshipCurrentMatchDay: championship.currentMatchDay
-                    })));
-            });
+    const filteredEvents = [];
+    const channelsEvents = [];
+
+    data.forEach(category => {
+        if (!category.championShips) return;
+
+        category.championShips.forEach(championship => {
+            championship.matchDays
+                .filter(matchDay => Number(matchDay.number) === Number(championship.currentMatchDay))
+                .forEach(matchDay => {
+                    matchDay.matchs.forEach(match => {
+                        const event = {
+                            id: match.id,
+                            dateTime: match.dateTime,
+                            homeTeam: match.homeTeam,
+                            visitingTeam: match.visitingTeam,
+                            result: match.result,
+                            isSuspended: match.isSuspended,
+                            isFinalized: match.isFinalized,
+                            isTop: match.isTop,
+                            links: match.links || [],
+                            championshipId: championship.id,
+                            championshipName: championship.name,
+                            championshipSession: championship.session,
+                            championshipCurrentMatchDay: championship.currentMatchDay
+                        };
+
+                        if (category.code === "CHA-FUT") {
+                            channelsEvents.push(event);
+                        } else {
+                            filteredEvents.push(event);
+                        }
+                    });
+                });
         });
+    });
+
+    return { filteredEvents, channelsEvents };
 }
+
 
 function searchEvents() {
     const searchInput = document.getElementById("searchEvent").value.toLowerCase();
@@ -111,6 +130,38 @@ function renderTable(data) {
     });
 }
 
+function renderChannels(data) {
+    const navBar = document.getElementById("containerNavBar");
+    navBar.innerHTML = '';
+
+    data.forEach(channel => {
+        if (!channel.links || channel.links.length === 0) {
+            console.warn(`El canal ${channel.id} no tiene enlaces disponibles.`);
+            return; 
+        }
+
+        const link = channel.links[0];
+
+        try {
+            new URL(link.url);
+        } catch (error) {
+            console.warn(`El enlace del canal ${channel.id} no es una URL válida: ${link.url}`);
+            return; 
+        }
+
+        const li = document.createElement("li");
+        li.classList.add("nav-item");
+
+        const a = document.createElement("a");
+        a.href = `channel/channel.html?matchId=${channel.id}&linkId=${link.id}`;
+        a.target = "_blank";
+        a.classList.add("nav-link");
+        a.textContent = channel.homeTeam;
+
+        li.appendChild(a);
+        navBar.appendChild(li);
+    });
+}
 
 document.getElementById("searchEvent").addEventListener("input", searchEvents);
 document.addEventListener("DOMContentLoaded", fetchData);
