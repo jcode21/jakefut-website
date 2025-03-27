@@ -36,9 +36,11 @@ function filterEventsDataFromAPI(data) {
     const filteredEvents = [];
     const channelsEvents = [];
 
-    // Obtener la fecha actual en el formato "dd/MM/yyyy"
-    const today = new Date();
-    const todayStr = today.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+    const now = new Date();
+    const todayStr = now.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+    const nowTime = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds(); 
+    const twoHoursAgoTime = nowTime - 2 * 3600;
 
     data.forEach(category => {
         if (!category.championShips) return;
@@ -65,14 +67,20 @@ function filterEventsDataFromAPI(data) {
                         };
 
                         if (category.code === "CHA-FUT") {
-                            // Siempre agregar los eventos de CHA-FUT, incluso sin fecha
                             channelsEvents.push(event);
                         } else {
-                            if (!match.dateTime) return; // Si no tiene fecha, ignorarlo
-                            
+                            if (!match.dateTime) return;
+
                             const [matchDateStr, matchTimeStr] = match.dateTime.split(" ");
-                            console.log("comparando ", matchDateStr, todayStr)
-                            if (matchDateStr !== todayStr) return; // Filtrar solo eventos de hoy
+                            console.log("Comparando fecha:", matchDateStr, "con", todayStr);
+                            console.log("Comparando hora:", matchTimeStr, "con el rango permitido");
+
+                            if (matchDateStr !== todayStr) return;
+
+                            const [matchHours, matchMinutes, matchSeconds] = matchTimeStr.split(":").map(Number);
+                            const matchTimeInSeconds = matchHours * 3600 + matchMinutes * 60 + (matchSeconds || 0);
+
+                            if (matchTimeInSeconds < twoHoursAgoTime) return;
 
                             filteredEvents.push(event);
                         }
@@ -81,9 +89,8 @@ function filterEventsDataFromAPI(data) {
         });
     });
 
-    // Ordenar filteredEvents por hora ascendente (HH:mm:ss)
     filteredEvents.sort((a, b) => {
-        const timeA = a.dateTime.split(" ")[1] || "00:00:00"; // Si falta, asignar medianoche
+        const timeA = a.dateTime.split(" ")[1] || "00:00:00";
         const timeB = b.dateTime.split(" ")[1] || "00:00:00";
         return timeA.localeCompare(timeB);
     });
@@ -120,18 +127,21 @@ function renderTable(data) {
     }
 
     data.forEach(match => {
+        const matchTime = match.dateTime.split(" ")[1].slice(0, 5);
+
         const row = document.createElement("tr");
         row.classList.add("cursor-pointer");
         row.innerHTML = `
-            <td>${match.dateTime}</td>
+            <td>${matchTime}</td>
             <td>${match.championshipName}: ${match.homeTeam} vs ${match.visitingTeam}</td>
         `;
 
         const filteredLinks = match.links.filter(link => link.isFormat !== 'Y');
 
+        const detailRow = document.createElement("tr");
+        detailRow.classList.add("detail-row", "d-none");
+
         if (filteredLinks.length > 0) {
-            const detailRow = document.createElement("tr");
-            detailRow.classList.add("detail-row", "d-none");
             detailRow.innerHTML = `
                 <td colspan="2" class="bg-light">
                     ${filteredLinks.map(link => `
@@ -141,12 +151,17 @@ function renderTable(data) {
                         </a>`).join("")}
                 </td>
             `;
-
-            tableBody.append(row, detailRow);
-            row.addEventListener("click", () => detailRow.classList.toggle("d-none"));
         } else {
-            tableBody.append(row);
+            detailRow.innerHTML = `
+                <td colspan="2" class="text-center text-muted bg-light">
+                    Links disponibles minutos antes del evento!
+                </td>
+            `;
         }
+
+        tableBody.append(row, detailRow);
+
+        row.addEventListener("click", () => detailRow.classList.toggle("d-none"));
     });
 }
 
