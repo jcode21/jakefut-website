@@ -9,9 +9,8 @@ async function fetchData() {
         const data = await response.json();
 
         if (data && data.categories) {
-            const { filteredEvents, channelsEvents } = filterEventsDataFromAPI(data.categories);
-            eventsData = filteredEvents;
-            channelsData = channelsEvents;
+            eventsData = filterEventsDataFromAPI(data.categories);
+            channelsData = data.channels;
             renderTable(eventsData);
             renderChannels(channelsData);
         }
@@ -34,13 +33,13 @@ function filterEventsDataFromAPI(data) {
     console.log("Datos recibidos:", data);
 
     const filteredEvents = [];
-    const channelsEvents = [];
 
     const now = new Date();
     const todayStr = now.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-    const nowTime = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds(); 
-    const twoHoursAgoTime = nowTime - 2 * 3600;
+    // Obtener la fecha y hora actual en milisegundos
+    const nowTime = now.getTime();
+    const twoHoursAgoTime = nowTime - 2 * 3600 * 1000; // Restar 2 horas en milisegundos
 
     data.forEach(category => {
         if (!category.championShips) return;
@@ -50,56 +49,47 @@ function filterEventsDataFromAPI(data) {
                 .filter(matchDay => Number(matchDay.number) === Number(championship.currentMatchDay))
                 .forEach(matchDay => {
                     matchDay.matchs.forEach(match => {
-                        const event = {
-                            id: match.id,
-                            dateTime: match.dateTime || "", // Puede estar vacío en CHA-FUT
-                            homeTeam: match.homeTeam,
-                            visitingTeam: match.visitingTeam,
-                            result: match.result,
-                            isSuspended: match.isSuspended,
-                            isFinalized: match.isFinalized,
-                            isTop: match.isTop,
-                            links: match.links || [],
-                            championshipId: championship.id,
-                            championshipName: championship.name,
-                            championshipSession: championship.session,
-                            championshipCurrentMatchDay: championship.currentMatchDay
-                        };
+                        if (!match.dateTime) return;
 
-                        if (category.code === "CHA-FUT") {
-                            channelsEvents.push(event);
-                        } else {
-                            if (!match.dateTime) return;
+                        const [matchDateStr, matchTimeStr] = match.dateTime.split(" ");
+                        if (!matchTimeStr) return;
 
-                            const [matchDateStr, matchTimeStr] = match.dateTime.split(" ");
-                            console.log("Comparando fecha:", matchDateStr, "con", todayStr);
-                            console.log("Comparando hora:", matchTimeStr, "con el rango permitido");
+                        console.log("Comparando fecha:", matchDateStr, "con", todayStr);
 
-                            if (matchDateStr !== todayStr) return;
+                        if (matchDateStr !== todayStr) return;
 
-                            const [matchHours, matchMinutes, matchSeconds] = matchTimeStr.split(":").map(Number);
-                            const matchTimeInSeconds = matchHours * 3600 + matchMinutes * 60 + (matchSeconds || 0);
+                        const [matchHours, matchMinutes, matchSeconds] = matchTimeStr.split(":").map(Number);
+                        const matchDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), matchHours, matchMinutes, matchSeconds || 0);
 
-                            if (matchTimeInSeconds < twoHoursAgoTime) return;
+                        console.log("Hora del partido:", matchDateTime.toLocaleTimeString("es-ES"));
+                        console.log("Hora actual:", now.toLocaleTimeString("es-ES"));
+                        console.log("Hora hace 2 horas:", new Date(twoHoursAgoTime).toLocaleTimeString("es-ES"));
 
-                            filteredEvents.push(event);
+                        // Filtrar solo los partidos dentro del rango válido(van a empezar )
+                        if (matchDateTime.getTime() >= twoHoursAgoTime) {
+                            filteredEvents.push({
+                                id: match.id,
+                                dateTime: match.dateTime,
+                                homeTeam: match.homeTeam,
+                                visitingTeam: match.visitingTeam,
+                                result: match.result,
+                                isSuspended: match.isSuspended,
+                                isFinalized: match.isFinalized,
+                                isTop: match.isTop,
+                                links: match.links || [],
+                                championshipId: championship.id,
+                                championshipName: championship.name,
+                                championshipSession: championship.session,
+                                championshipCurrentMatchDay: championship.currentMatchDay
+                            });
                         }
                     });
                 });
         });
     });
 
-    filteredEvents.sort((a, b) => {
-        const timeA = a.dateTime.split(" ")[1] || "00:00:00";
-        const timeB = b.dateTime.split(" ")[1] || "00:00:00";
-        return timeA.localeCompare(timeB);
-    });
-
-    return { filteredEvents, channelsEvents };
+    return filteredEvents;
 }
-
-
-
 
 function searchEvents() {
     const searchInput = document.getElementById("searchEvent").value.toLowerCase();
@@ -108,7 +98,7 @@ function searchEvents() {
         return;
     }
 
-    const filteredData = eventsData.filter(event => 
+    const filteredData = eventsData.filter(event =>
         event.championshipName.toLowerCase().includes(searchInput) ||
         event.homeTeam.toLowerCase().includes(searchInput) ||
         event.visitingTeam.toLowerCase().includes(searchInput)
@@ -172,7 +162,7 @@ function renderChannels(data) {
     data.forEach(channel => {
         if (!channel.links || channel.links.length === 0) {
             console.warn(`El canal ${channel.id} no tiene enlaces disponibles.`);
-            return; 
+            return;
         }
 
         const link = channel.links[0];
@@ -181,7 +171,7 @@ function renderChannels(data) {
             new URL(link.url);
         } catch (error) {
             console.warn(`El enlace del canal ${channel.id} no es una URL válida: ${link.url}`);
-            return; 
+            return;
         }
 
         const li = document.createElement("li");
