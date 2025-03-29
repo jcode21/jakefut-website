@@ -15,7 +15,7 @@ async function fetchData() {
             eventsDataNext = eventsNext;
             channelsData = data.channels;
             renderTable(eventsDataToday, 'tBodyToday');
-            renderTable(eventsDataNext, 'tBodyNext');
+            renderTable(eventsDataNext, 'tBodyNext', true);
             renderChannels(channelsData);
         }
 
@@ -101,10 +101,14 @@ function filterEventsDataFromAPI(data) {
         });
     });
 
+    // Ordenar ambos arrays ascendentemente por match.dateTime
+    eventsToday.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+    eventsNext.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+
     return { eventsToday, eventsNext };
 }
 
-function renderTable(data, tableId) {
+function renderTable(data, tableId, showDate = false) {
     const tableBody = document.getElementById(tableId);
     tableBody.innerHTML = "";
 
@@ -114,13 +118,14 @@ function renderTable(data, tableId) {
     }
 
     data.forEach(match => {
-        const matchTime = match.dateTime.split(" ")[1].slice(0, 5);
+        const [matchDateStr, matchTimeStr] = match.dateTime.split(" ");
+        const matchDisplayTime = showDate ? `${matchDateStr} ${matchTimeStr.slice(0, 5)}` : matchTimeStr.slice(0, 5);
 
         const row = document.createElement("tr");
         row.classList.add("cursor-pointer");
         row.innerHTML = `
-            <td>${matchTime}</td>
-            <td>${match.championshipName}: ${match.homeTeam} vs ${match.visitingTeam}</td>
+            <td>${matchDisplayTime}</td>
+            <td><strong>${match.championshipName}</strong>: ${match.homeTeam} vs ${match.visitingTeam}</td>
         `;
 
         tableBody.appendChild(row);
@@ -144,7 +149,7 @@ function searchEvents() {
 }
 
 function renderChannels(){
-    
+
 }
 
 document.getElementById("searchEvent").addEventListener("input", searchEvents);
