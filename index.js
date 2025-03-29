@@ -1,5 +1,6 @@
-let eventsData = [];
-let channelsData = []
+let eventsDataToday = [];
+let eventsDataNext = [];
+let channelsData = [];
 
 async function fetchData() {
     try {
@@ -9,106 +10,114 @@ async function fetchData() {
         const data = await response.json();
 
         if (data && data.categories) {
-            eventsData = filterEventsDataFromAPI(data.categories);
+            const { eventsToday, eventsNext } = filterEventsDataFromAPI(data.categories);
+            eventsDataToday = eventsToday;
+            eventsDataNext = eventsNext;
             channelsData = data.channels;
-            renderTable(eventsData);
+            renderTable(eventsDataToday, 'tBodyToday');
+            renderTable(eventsDataNext, 'tBodyNext', true);
             renderChannels(channelsData);
         }
 
         const date = new Date();
         const options = { day: '2-digit', month: 'long', year: 'numeric' };
         document.getElementById("title-agenda").innerText = `Agenda - ${date.toLocaleDateString('es-ES', options)}`;
+        document.getElementById("title-agenda-next").innerText = `Próximos Eventos`;
     } catch (error) {
         console.error("Error al obtener datos:", error);
     }
 }
 
-
 function filterEventsDataFromAPI(data) {
     if (!Array.isArray(data)) {
         console.error("Error: 'data' no es una lista válida.", data);
-        return { filteredEvents: [], channelsEvents: [] };
+        return { eventsToday: [], eventsNext: [] };
     }
 
-    console.log("Datos recibidos:", data);
-
-    const filteredEvents = [];
+    const eventsToday = [];
+    const eventsNext = [];
 
     const now = new Date();
     const todayStr = now.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
-
-    // Obtener la fecha y hora actual en milisegundos
     const nowTime = now.getTime();
-    const twoHoursAgoTime = nowTime - 2 * 3600 * 1000; // Restar 2 horas en milisegundos
+    const twoHoursAgoTime = nowTime - 2 * 3600 * 1000;
 
     data.forEach(category => {
         if (!category.championShips) return;
 
         category.championShips.forEach(championship => {
+
             championship.matchDays
                 .filter(matchDay => Number(matchDay.number) === Number(championship.currentMatchDay))
                 .forEach(matchDay => {
                     matchDay.matchs.forEach(match => {
-                        if (!match.dateTime) return;
+                        if (!match.dateTime || match.dateTime.trim() === "") return;
 
                         const [matchDateStr, matchTimeStr] = match.dateTime.split(" ");
-                        if (!matchTimeStr) return;
+                        if (!matchTimeStr || matchDateStr !== todayStr) return;
 
-                        console.log("Comparando fecha:", matchDateStr, "con", todayStr);
+                        const [matchHours, matchMinutes] = matchTimeStr.split(":").map(Number);
+                        const matchDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), matchHours, matchMinutes);
 
-                        if (matchDateStr !== todayStr) return;
-
-                        const [matchHours, matchMinutes, matchSeconds] = matchTimeStr.split(":").map(Number);
-                        const matchDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), matchHours, matchMinutes, matchSeconds || 0);
-
-                        console.log("Hora del partido:", matchDateTime.toLocaleTimeString("es-ES"));
-                        console.log("Hora actual:", now.toLocaleTimeString("es-ES"));
-                        console.log("Hora hace 2 horas:", new Date(twoHoursAgoTime).toLocaleTimeString("es-ES"));
-
-                        // Filtrar solo los partidos dentro del rango válido(van a empezar )
                         if (matchDateTime.getTime() >= twoHoursAgoTime) {
-                            filteredEvents.push({
-                                id: match.id,
-                                dateTime: match.dateTime,
-                                homeTeam: match.homeTeam,
-                                visitingTeam: match.visitingTeam,
-                                result: match.result,
-                                isSuspended: match.isSuspended,
-                                isFinalized: match.isFinalized,
-                                isTop: match.isTop,
-                                links: match.links || [],
-                                championshipId: championship.id,
-                                championshipName: championship.name,
-                                championshipSession: championship.session,
-                                championshipCurrentMatchDay: championship.currentMatchDay
-                            });
+                            eventsToday.push({ ...match, championshipName: championship.name });
                         }
                     });
                 });
+
+            const nextDay = new Date(now);
+            nextDay.setDate(now.getDate() + 1);
+            const nextDayStr = nextDay.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+            let foundMatches = false;
+
+            championship.matchDays.forEach(matchDay => {
+                if (foundMatches) return;
+
+                const nextMatches = matchDay.matchs.filter(match => {
+                    if (!match.dateTime || match.dateTime.trim() === "") return false;
+
+                    const [matchDateStr] = match.dateTime.split(" ");
+                    return matchDateStr === nextDayStr;
+                });
+
+                if (nextMatches.length > 0) {
+                    eventsNext.push(...nextMatches.slice(0, 5).map(match => ({ ...match, championshipName: championship.name })));
+                    foundMatches = true;
+                }
+            });
+
+            if (!foundMatches) {
+                const nextMatchDayNumber = Number(championship.currentMatchDay) + 1;
+
+                championship.matchDays
+                    .filter(matchDay => Number(matchDay.number) === nextMatchDayNumber)
+                    .forEach(matchDay => {
+                        const nextMatches = matchDay.matchs.filter(match => match.dateTime && match.dateTime.trim() !== "").slice(0, 5);
+
+                        eventsNext.push(...nextMatches.map(match => ({ ...match, championshipName: championship.name })));
+                    });
+            }
         });
     });
 
-    return filteredEvents;
+    // Ordenar ambos arrays ascendentemente por match.dateTime
+    eventsToday.sort((a, b) => parseDateTime(a.dateTime) - parseDateTime(b.dateTime));
+    eventsNext.sort((a, b) => parseDateTime(a.dateTime) - parseDateTime(b.dateTime));
+
+    return { eventsToday, eventsNext };
 }
 
-function searchEvents() {
-    const searchInput = document.getElementById("searchEvent").value.toLowerCase();
-    if (!eventsData.length) {
-        console.warn("No hay datos de eventos cargados.");
-        return;
-    }
+function parseDateTime(dateTimeStr) {
+    const [dateStr, timeStr] = dateTimeStr.split(" ");
+    const [day, month, year] = dateStr.split("/").map(Number);
+    const [hours, minutes] = timeStr.split(":").map(Number);
 
-    const filteredData = eventsData.filter(event =>
-        event.championshipName.toLowerCase().includes(searchInput) ||
-        event.homeTeam.toLowerCase().includes(searchInput) ||
-        event.visitingTeam.toLowerCase().includes(searchInput)
-    );
-
-    renderTable(filteredData);
+    return new Date(year, month - 1, day, hours, minutes);
 }
 
-function renderTable(data) {
-    const tableBody = document.querySelector("tbody");
+function renderTable(data, tableId, showDate = false) {
+    const tableBody = document.getElementById(tableId);
     tableBody.innerHTML = "";
 
     if (!data.length) {
@@ -117,13 +126,14 @@ function renderTable(data) {
     }
 
     data.forEach(match => {
-        const matchTime = match.dateTime.split(" ")[1].slice(0, 5);
+        const [matchDateStr, matchTimeStr] = match.dateTime.split(" ");
+        const matchDisplayTime = showDate ? `${matchDateStr} ${matchTimeStr.slice(0, 5)}` : matchTimeStr.slice(0, 5);
 
         const row = document.createElement("tr");
         row.classList.add("cursor-pointer");
         row.innerHTML = `
-            <td>${matchTime}</td>
-            <td>${match.championshipName}: ${match.homeTeam} vs ${match.visitingTeam}</td>
+            <td>${matchDisplayTime}</td>
+            <td><strong>${match.championshipName}</strong>: ${match.homeTeam} vs ${match.visitingTeam}</td>
         `;
 
         const filteredLinks = match.links.filter(link => link.isFormat !== 'Y');
@@ -152,40 +162,43 @@ function renderTable(data) {
         tableBody.append(row, detailRow);
 
         row.addEventListener("click", () => detailRow.classList.toggle("d-none"));
+
     });
 }
 
+function searchEvents() {
+    const searchInput = document.getElementById("searchEvent").value.toLowerCase();
+    if (!eventsDataToday.length) {
+        console.warn("No hay datos de eventos cargados.");
+        return;
+    }
+
+    const filteredData = eventsDataToday.filter(event =>
+        event.championshipName.toLowerCase().includes(searchInput) ||
+        event.homeTeam.toLowerCase().includes(searchInput) ||
+        event.visitingTeam.toLowerCase().includes(searchInput)
+    );
+
+    renderTable(filteredData, 'tBodyToday');
+}
+
 function renderChannels(data) {
-    const navBar = document.getElementById("containerNavBar");
-    navBar.innerHTML = '';
-
+    const containerNavBar = document.getElementById('containerNavBar');
+    containerNavBar.innerHTML = '';
     data.forEach(channel => {
-        if (!channel.links || channel.links.length === 0) {
-            console.warn(`El canal ${channel.id} no tiene enlaces disponibles.`);
-            return;
+        if (channel.show === 'Y' && channel.links.length > 0) {
+            const li = document.createElement("li");
+            li.classList.add("cursor-pointer");
+            li.innerHTML = `
+                <a href="channel/channel.html?channelId=${channel.id}&linkId=${channel.links[0].id}"
+                                    target="_blank" class="nav-link">
+                        ${channel.name}
+                    </a>`;
+            containerNavBar.append(li)
         }
 
-        const link = channel.links[0];
+    })
 
-        try {
-            new URL(link.url);
-        } catch (error) {
-            console.warn(`El enlace del canal ${channel.id} no es una URL válida: ${link.url}`);
-            return;
-        }
-
-        const li = document.createElement("li");
-        li.classList.add("nav-item");
-
-        const a = document.createElement("a");
-        a.href = `channel/channel.html?matchId=${channel.id}&linkId=${link.id}`;
-        a.target = "_blank";
-        a.classList.add("nav-link");
-        a.textContent = channel.homeTeam;
-
-        li.appendChild(a);
-        navBar.appendChild(li);
-    });
 }
 
 document.getElementById("searchEvent").addEventListener("input", searchEvents);

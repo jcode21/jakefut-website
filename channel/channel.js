@@ -1,4 +1,6 @@
-let eventsData = [];
+let eventsDataToday = [];
+let eventsDataNext = [];
+let channelsData = [];
 
 async function fetchData() {
     try {
@@ -7,13 +9,20 @@ async function fetchData() {
 
         const data = await response.json();
 
-        if (!data?.categories) throw new Error("No se encontraron categorías.");
-
         if (data && data.categories) {
-            eventsData = filterEventsDataFromAPI(data.categories);
-            loadDataFrame(eventsData);
+            const { eventsToday, eventsNext } = filterEventsDataFromAPI(data.categories);
+            eventsDataToday = eventsToday;
+            eventsDataNext = eventsNext;
+            channelsData = data.channels;
+            loadDataFrame()
         }
+        /*
 
+        const date = new Date();
+        const options = { day: '2-digit', month: 'long', year: 'numeric' };
+        document.getElementById("title-agenda").innerText = `Agenda - ${date.toLocaleDateString('es-ES', options)}`;
+        document.getElementById("title-agenda-next").innerText = `Próximos Eventos`;
+        */
     } catch (error) {
         console.error("Error al obtener datos:", error);
     }
@@ -22,69 +31,116 @@ async function fetchData() {
 function filterEventsDataFromAPI(data) {
     if (!Array.isArray(data)) {
         console.error("Error: 'data' no es una lista válida.", data);
-        return [];
+        return { eventsToday: [], eventsNext: [] };
     }
 
-    console.log("Datos recibidos:", data);
+    const eventsToday = [];
+    const eventsNext = [];
 
-    return data
-        .filter(category => category.code !== 'CHA-FUT') // Filtrar categorías excluidas
-        .flatMap(category => {
-            console.log("Procesando categoría:", category.name);
-            return category.championShips.flatMap(championship => {
-                console.log("  - Procesando campeonato:", championship.name);
-                return championship.matchDays
-                    .filter(matchDay => Number(matchDay.number) === Number(championship.currentMatchDay)) // Convertir a número
-                    .flatMap(matchDay => matchDay.matchs.map(match => ({
-                        id: match.id,
-                        dateTime: match.dateTime,
-                        homeTeam: match.homeTeam,
-                        visitingTeam: match.visitingTeam,
-                        result: match.result,
-                        isSuspended: match.isSuspended,
-                        isFinalized: match.isFinalized,
-                        isTop: match.isTop,
-                        links: match.links,
-                        championshipId: championship.id,
-                        championshipName: championship.name,
-                        championshipSession: championship.session,
-                        championshipCurrentMatchDay: championship.currentMatchDay
-                    })));
+    const now = new Date();
+    const todayStr = now.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+    const nowTime = now.getTime();
+    const twoHoursAgoTime = nowTime - 2 * 3600 * 1000;
+
+    data.forEach(category => {
+        if (!category.championShips) return;
+
+        category.championShips.forEach(championship => {
+
+            championship.matchDays
+                .filter(matchDay => Number(matchDay.number) === Number(championship.currentMatchDay))
+                .forEach(matchDay => {
+                    matchDay.matchs.forEach(match => {
+                        if (!match.dateTime || match.dateTime.trim() === "") return;
+
+                        const [matchDateStr, matchTimeStr] = match.dateTime.split(" ");
+                        if (!matchTimeStr || matchDateStr !== todayStr) return;
+
+                        const [matchHours, matchMinutes] = matchTimeStr.split(":").map(Number);
+                        const matchDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), matchHours, matchMinutes);
+
+                        if (matchDateTime.getTime() >= twoHoursAgoTime) {
+                            eventsToday.push({ ...match, championshipName: championship.name });
+                        }
+                    });
+                });
+
+            const nextDay = new Date(now);
+            nextDay.setDate(now.getDate() + 1);
+            const nextDayStr = nextDay.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+            let foundMatches = false;
+
+            championship.matchDays.forEach(matchDay => {
+                if (foundMatches) return;
+
+                const nextMatches = matchDay.matchs.filter(match => {
+                    if (!match.dateTime || match.dateTime.trim() === "") return false;
+
+                    const [matchDateStr] = match.dateTime.split(" ");
+                    return matchDateStr === nextDayStr;
+                });
+
+                if (nextMatches.length > 0) {
+                    eventsNext.push(...nextMatches.slice(0, 5).map(match => ({ ...match, championshipName: championship.name })));
+                    foundMatches = true;
+                }
             });
+
+            if (!foundMatches) {
+                const nextMatchDayNumber = Number(championship.currentMatchDay) + 1;
+
+                championship.matchDays
+                    .filter(matchDay => Number(matchDay.number) === nextMatchDayNumber)
+                    .forEach(matchDay => {
+                        const nextMatches = matchDay.matchs.filter(match => match.dateTime && match.dateTime.trim() !== "").slice(0, 5);
+
+                        eventsNext.push(...nextMatches.map(match => ({ ...match, championshipName: championship.name })));
+                    });
+            }
         });
+    });
+
+    // Ordenar ambos arrays ascendentemente por match.dateTime
+    eventsToday.sort((a, b) => parseDateTime(a.dateTime) - parseDateTime(b.dateTime));
+    eventsNext.sort((a, b) => parseDateTime(a.dateTime) - parseDateTime(b.dateTime));
+
+    return { eventsToday, eventsNext };
 }
 
-async function loadDataFrame(data) {
+function parseDateTime(dateTimeStr) {
+    const [dateStr, timeStr] = dateTimeStr.split(" ");
+    const [day, month, year] = dateStr.split("/").map(Number);
+    const [hours, minutes] = timeStr.split(":").map(Number);
+
+    return new Date(year, month - 1, day, hours, minutes);
+}
+
+async function loadDataFrame() {
     const params = new URLSearchParams(window.location.search);
     const matchId = params.get("matchId");
+    const channelId = params.get("channelId");
     const linkId = params.get("linkId");
 
-    if (!matchId) {
-        console.warn("No se encontró el parámetro 'matchId' en la URL");
-        return;
-    }
+    if (!linkId) return console.warn("No se encontró el parámetro 'linkId' en la URL");
 
-    if (!linkId) {
-        console.warn("No se encontró el parámetro 'linkId' en la URL");
-        return;
-    }
+    const { objectId, data } = matchId ? 
+        { objectId: matchId, data: eventsDataToday } : 
+        channelId ? 
+        { objectId: channelId, data: channelsData } : 
+        {};
 
-    const match = data.find(item => item.id === matchId);
+    if (!objectId || !data) return console.warn("No se encontró un 'matchId' ni 'channelId' válidos en la URL");
 
-    if (!match) {
-        console.warn(`No se encontró un evento con el ID: ${matchId}`);
-        return;
-    }
+    const event = data.find(item => item.id === objectId);
+    if (!event) return console.warn(`No se encontró un evento con el ID: ${objectId}`);
 
-    let link = Array.isArray(match.links) ? match.links.find(item => item.id === linkId) : undefined;
+    const link = event.links?.find(item => item.id === linkId);
+    if (!link) return console.warn(`No se encontró un enlace válido para el linkId: ${linkId}`);
 
-    if (!match.links || !link) {
-        console.warn(`No hay enlaces disponibles para la opción ${linkId} del evento con ID: ${matchId}`);
-        return;
-    }
-
-    updateIframe(link.url)
+    updateIframe(link.url);
 }
+
 
 function updateIframe(url) {
     try {
