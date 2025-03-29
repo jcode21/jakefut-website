@@ -102,10 +102,18 @@ function filterEventsDataFromAPI(data) {
     });
 
     // Ordenar ambos arrays ascendentemente por match.dateTime
-    eventsToday.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
-    eventsNext.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+    eventsToday.sort((a, b) => parseDateTime(a.dateTime) - parseDateTime(b.dateTime));
+    eventsNext.sort((a, b) => parseDateTime(a.dateTime) - parseDateTime(b.dateTime));
 
     return { eventsToday, eventsNext };
+}
+
+function parseDateTime(dateTimeStr) {
+    const [dateStr, timeStr] = dateTimeStr.split(" ");
+    const [day, month, year] = dateStr.split("/").map(Number);
+    const [hours, minutes] = timeStr.split(":").map(Number);
+
+    return new Date(year, month - 1, day, hours, minutes);
 }
 
 function renderTable(data, tableId, showDate = false) {
@@ -174,7 +182,7 @@ function searchEvents() {
     renderTable(filteredData, 'tBodyToday');
 }
 
-function renderChannels(){
+function renderChannels() {
 
 }
 
