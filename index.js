@@ -182,7 +182,22 @@ function searchEvents() {
     renderTable(filteredData, 'tBodyToday');
 }
 
-function renderChannels() {
+function renderChannels(data) {
+    const containerNavBar = document.getElementById('containerNavBar');
+    containerNavBar.innerHTML = '';
+    data.forEach(channel => {
+        if (channel.show === 'Y' && channel.links.length > 0) {
+            const li = document.createElement("li");
+            li.classList.add("cursor-pointer");
+            li.innerHTML = `
+                <a href="channel/channel.html?channelId=${channel.id}&linkId=${channel.links[0].id}"
+                                    target="_blank" class="nav-link">
+                        ${channel.name}
+                    </a>`;
+            containerNavBar.append(li)
+        }
+
+    })
 
 }
 
