@@ -128,7 +128,33 @@ function renderTable(data, tableId, showDate = false) {
             <td><strong>${match.championshipName}</strong>: ${match.homeTeam} vs ${match.visitingTeam}</td>
         `;
 
-        tableBody.appendChild(row);
+        const filteredLinks = match.links.filter(link => link.isFormat !== 'Y');
+
+        const detailRow = document.createElement("tr");
+        detailRow.classList.add("detail-row", "d-none");
+
+        if (filteredLinks.length > 0) {
+            detailRow.innerHTML = `
+                <td colspan="2" class="bg-light">
+                    ${filteredLinks.map(link => `
+                        <a class='text-decoration-none d-block py-2 border-bottom' 
+                        href="channel/channel.html?matchId=${match.id}&linkId=${link.id}" target="_blank">
+                            ${link.name}
+                        </a>`).join("")}
+                </td>
+            `;
+        } else {
+            detailRow.innerHTML = `
+                <td colspan="2" class="text-center text-muted bg-light">
+                    Links disponibles minutos antes del evento!
+                </td>
+            `;
+        }
+
+        tableBody.append(row, detailRow);
+
+        row.addEventListener("click", () => detailRow.classList.toggle("d-none"));
+
     });
 }
 
