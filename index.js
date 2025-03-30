@@ -4,7 +4,8 @@ let channelsData = [];
 
 async function fetchData() {
     try {
-        const response = await fetch(HOST);
+        let API = `${HOSTS.API_DATA}/generic`
+        const response = await fetch(API);
         if (!response.ok) throw new Error(`Error en la API: ${response.status}`);
 
         const data = await response.json();

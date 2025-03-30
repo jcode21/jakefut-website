@@ -4,7 +4,8 @@ let channelsData = [];
 
 async function fetchData() {
     try {
-        const response = await fetch(HOST);
+        let API = `${HOSTS.API_DATA}/generic`
+        const response = await fetch(API);
         if (!response.ok) throw new Error(`Error en la API: ${response.status}`);
 
         const data = await response.json();
@@ -137,8 +138,7 @@ async function loadDataFrame() {
 
     const link = event.links?.find(item => item.id === linkId);
     if (!link) return console.warn(`No se encontró un enlace válido para el linkId: ${linkId}`);
-
-    updateIframe(link.url);
+    updateIframe(link.url)
 }
 
 
