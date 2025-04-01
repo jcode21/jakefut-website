@@ -143,13 +143,7 @@ async function loadDataFrame() {
 
 
 function updateIframe(url) {
-    try {
-        new URL(url);
-        document.getElementById("frameView").src = url;
-        console.log("Iframe actualizado con:", originalUrl);
-    } catch (error) {
-        console.warn(`❌ URL inválida: ${url}`);
-    }
+    document.getElementById("frameView").src = url;
 }
 
 document.addEventListener("DOMContentLoaded", fetchData);
