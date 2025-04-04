@@ -41,7 +41,7 @@ function filterEventsDataFromAPI(data) {
     const now = new Date();
     const todayStr = now.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
     const nowTime = now.getTime();
-    const twoHoursAgoTime = nowTime - 2 * 3600 * 1000;
+    const xHoursAgoTime = nowTime - X_HOUR * 3600 * 1000;
 
     data.forEach(category => {
         if (!category.championShips) return;
@@ -49,7 +49,6 @@ function filterEventsDataFromAPI(data) {
         category.championShips.forEach(championship => {
 
             championship.matchDays
-                .filter(matchDay => Number(matchDay.number) === Number(championship.currentMatchDay))
                 .forEach(matchDay => {
                     matchDay.matchs.forEach(match => {
                         if (!match.dateTime || match.dateTime.trim() === "") return;
@@ -60,7 +59,7 @@ function filterEventsDataFromAPI(data) {
                         const [matchHours, matchMinutes] = matchTimeStr.split(":").map(Number);
                         const matchDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), matchHours, matchMinutes);
 
-                        if (matchDateTime.getTime() >= twoHoursAgoTime) {
+                        if (matchDateTime.getTime() >= xHoursAgoTime) {
                             eventsToday.push({ ...match, championshipName: championship.name });
                         }
                     });
@@ -83,7 +82,7 @@ function filterEventsDataFromAPI(data) {
                 });
 
                 if (nextMatches.length > 0) {
-                    eventsNext.push(...nextMatches.slice(0, 5).map(match => ({ ...match, championshipName: championship.name })));
+                    eventsNext.push(...nextMatches.slice(0, X_RECORDS_ADDITIONAL).map(match => ({ ...match, championshipName: championship.name })));
                     foundMatches = true;
                 }
             });
@@ -94,7 +93,7 @@ function filterEventsDataFromAPI(data) {
                 championship.matchDays
                     .filter(matchDay => Number(matchDay.number) === nextMatchDayNumber)
                     .forEach(matchDay => {
-                        const nextMatches = matchDay.matchs.filter(match => match.dateTime && match.dateTime.trim() !== "").slice(0, 5);
+                        const nextMatches = matchDay.matchs.filter(match => match.dateTime && match.dateTime.trim() !== "").slice(0, X_RECORDS_ADDITIONAL);
 
                         eventsNext.push(...nextMatches.map(match => ({ ...match, championshipName: championship.name })));
                     });
@@ -102,10 +101,8 @@ function filterEventsDataFromAPI(data) {
         });
     });
 
-    // Ordenar ambos arrays ascendentemente por match.dateTime
     eventsToday.sort((a, b) => parseDateTime(a.dateTime) - parseDateTime(b.dateTime));
     eventsNext.sort((a, b) => parseDateTime(a.dateTime) - parseDateTime(b.dateTime));
-
     return { eventsToday, eventsNext };
 }
 
@@ -133,7 +130,7 @@ function renderTable(data, tableId, showDate = false) {
         const row = document.createElement("tr");
         row.classList.add("cursor-pointer");
         row.innerHTML = `
-            <td>${matchDisplayTime}</td>
+            <td class='text-center'>${matchDisplayTime}</td>
             <td><strong>${match.championshipName}</strong>: ${match.homeTeam} vs ${match.visitingTeam}</td>
         `;
 
