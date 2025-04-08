@@ -1,7 +1,7 @@
-//const host = "http://localhost:8080";
-const host = "https://api-jakefutbol.redpos.app";
 
 function validateRequest() {
+
+    /*
     const params = new URLSearchParams(window.location.search);
     const matchId = params.get("eventId");
     const option = params.get("option");
@@ -24,11 +24,14 @@ function validateRequest() {
     }
 
     fetchDataMatch(matchId, optionIndex);
+    */
+
+    fetchTestFormat();
 }
 
 function fetchDataMatch(matchId, optionIndex) {
     const xhr = new XMLHttpRequest();
-    const url = host + "/matches";
+    const url = HOSTS.API_DATA;
 
     xhr.open("GET", url, true);
 
@@ -38,6 +41,21 @@ function fetchDataMatch(matchId, optionIndex) {
             if (Array.isArray(matchData)) {
                 searchMatch(matchData, matchId, optionIndex);
             }
+        }
+    };
+
+    xhr.send();
+}
+
+function fetchTestFormat() {
+    const xhr = new XMLHttpRequest();
+    const url = "https://la12hd.com/vivo/canal.php?stream=espn2";
+
+    xhr.open("GET", url, true);
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            console.log(xhr.responseText)
         }
     };
 
@@ -63,18 +81,18 @@ function searchMatch(matchData, matchId, optionIndex) {
 }
 
 function loadStream(url, match) {
+    /*
     if (!url) {
         console.warn(`No hay enlaces disponibles para el evento con ID: ${match.id}`);
         return;
     }
+        */
 
     const video = document.getElementById('my_video_1');
 
-    const proxyUrl = `https://39osta28l0q8tvo4.tamalpsdrtd.lat/v4/variant/VE1gTdz0mLzRnLv52bt9SMhFjdtM3ajFmc09yNzUjY2UWY0QGO0MWLihTMh1iNlRGNtgzYjVWLyIWNkFTY5kzL.m3u8`;
-
     if (Hls.isSupported()) {
         const hls = new Hls();
-        hls.loadSource(proxyUrl);
+        hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
             console.log("Video listo para reproducir");
