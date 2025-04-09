@@ -14,7 +14,8 @@ async function fetchData() {
             const { eventsToday, eventsNext } = filterEventsDataFromAPI(data.categories);
             eventsDataToday = eventsToday;
             eventsDataNext = eventsNext;
-            channelsData = data.channels;
+            channelsData = filterChannelsFromAPI(data.channels)
+            console.log(channelsData)
             renderTable(eventsDataToday, 'tBodyToday');
             renderTable(eventsDataNext, 'tBodyNext', true);
             renderChannels(channelsData);
@@ -178,6 +179,26 @@ function searchEvents() {
     );
 
     renderTable(filteredData, 'tBodyToday');
+}
+
+function filterChannelsFromAPI(data) {
+    if (!Array.isArray(data)) {
+        console.error("Error: 'data' no es una lista válida.", data);
+        return { channels: [] };
+    }
+
+    return data
+        .map(channel => {
+            const linksFiltrados = channel.links.filter(link => link.isFormat === 'N');
+            if (linksFiltrados.length > 0) {
+                return {
+                    ...channel,
+                    links: linksFiltrados
+                };
+            }
+            return null;
+        })
+        .filter(channel => channel !== null);
 }
 
 function renderChannels(data) {
